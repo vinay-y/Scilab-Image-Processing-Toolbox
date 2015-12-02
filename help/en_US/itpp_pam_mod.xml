@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry version="5.0-subset Scilab" xml:id="sym_open" xml:lang="en"
+					xmlns="http://docbook.org/ns/docbook"
+					xmlns:xlink="http://www.w3.org/1999/xlink"
+					xmlns:svg="http://www.w3.org/2000/svg"
+					xmlns:ns3="http://www.w3.org/1999/xhtml"
+					xmlns:mml="http://www.w3.org/1998/Math/MathML"
+					xmlns:db="http://docbook.org/ns/docbook">
+
+	<refnamediv>
+		<refname>itpp_pam_mod</refname>
+
+		<refpurpose>M-ary PAM modulator with real symbols</refpurpose>
+	</refnamediv>
+
+	<refsynopsisdiv>
+		<title>Calling Sequence</title>
+
+		<synopsis>ModulatedVec = itpp_pam_mod(int M, const bvec &amp;bits)</synopsis>
+	</refsynopsisdiv>
+	
+	<refsynopsisdiv>
+		<title>Arguments</title>
+		
+		<simplelist type="vert">
+			<member>M - Set the size of the signal constellation</member>
+			<member>bits - Input Bit Vector to modulate</member>
+			<member>ModulatedVec - Modulated Vector returned</member>
+		</simplelist>
+		
+	</refsynopsisdiv>
+	
+	<refsection>
+		<title>Description</title>
+
+		<para>This class implements an M-ary PAM modulator with the following signal values: 
+		
+		    <latex>
+		      \begin{eqnarray}
+		      $\{-(M-1), \ldots, -3, -1, 1, 3, \ldots, (M-1)\}$
+		      \end{eqnarray}
+		    </latex>
+   		
+   		Symbol numbering is from right to left in the increasing order. The Gray encoding of bits to symbols is used.
+
+	  	The constellation symbols are normalized so that the average energy is equal to 1. That is, normalized with 
+		    <latex>
+		      \begin{eqnarray}
+		      $ \sqrt{(M^2-1)/3}$
+		      \end{eqnarray}
+		    </latex>
+		
+		</para>
+		
+		<para>M must be some square of 2</para>
+	</refsection>
+
+	<refsection>
+		<title>Examples</title>
+
+		<programlisting role="example">vec = [1 0 1 1]&#xA;b = itpp_pam_mod(2, vec)&#xA;output = [-1 1 -1 -1]</programlisting>
+	</refsection>
+
+	<refsection>
+		<title>Authors</title>
+
+		<simplelist type="vert">
+			<member>Pratik Kapoor</member>
+		</simplelist>
+	</refsection>
+</refentry>
