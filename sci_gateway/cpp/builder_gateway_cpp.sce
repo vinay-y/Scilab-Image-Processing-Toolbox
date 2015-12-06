@@ -50,6 +50,8 @@ names = [
             "getrectsubpix","opencv_getrectsubpix";
             "getrotationmatrix2D","opencv_getrotationmatrix2D";
             "houghlinesp","opencv_houghlinesp";
+            "ind2rgb","opencv_ind2rgb";
+            "ind2gray","opencv_ind2gray";
 		];
 
 files = [
@@ -101,7 +103,9 @@ files = [
             "opencv_getgaussiankernel.cpp",
             "opencv_getrectsubpix.cpp",
             "opencv_getrotationmatrix2D.cpp",
-            "opencv_houghlinesp.cpp"
+            "opencv_houghlinesp.cpp",
+            "opencv_ind2rgb.cpp",
+            "opencv_ind2gray.cpp"
 		];
 
 function builder_gw_cpp()
