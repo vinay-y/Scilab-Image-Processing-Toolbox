@@ -1,5 +1,7 @@
 /********************************************************
 Author: Vinay
+
+Function: ind2gray(image, colormap)
 ********************************************************/
 
 #include <numeric>
@@ -24,58 +26,83 @@ extern "C"
     SciErr sciErr;
     int intErr = 0;
     int iRows=0,iCols=0;
-    int pirows=0,picols=0;
+    int cRows=0,cCols=0;
     int *piAddr = NULL;
     int *piAddrNew = NULL;
-    int *piAddr2  = NULL;
-    //unsigned short int *image = NULL;
-    double *map = NULL;
-    int i,j,k;
-    double x, y, width, height;
 
     //checking input argument
     CheckInputArgument(pvApiCtx, 2, 2);
     CheckOutputArgument(pvApiCtx, 1, 1) ;
 
-    Mat image;
+    Mat image, imgcpy;
     retrieveImage(image, 1);
+    string tempstring = type2str(image.type());
+    char *imtype;
+    imtype = (char *)malloc(tempstring.size() + 1);
+    memcpy(imtype, tempstring.c_str(), tempstring.size() + 1);
+    bool integer = true;
+    int scale = 1;
+    double error = 0;
+
+    if (strcmp(imtype,"8U")==0) {
+        integer = true;
+        scale = 255;
+        error = 0.5;
+    }
+    else if (strcmp(imtype,"16U")==0) {
+        integer = true;
+        scale = 65535;
+        error = 0.5;
+    }
+    else if (strcmp(imtype,"32F")==0 || strcmp(imtype,"64F")==0) {
+        integer = false;
+        scale = 1;
+        error = 0;
+    }
+    else {
+        sciprint("Invalid image");
+        return 0;
+    }
     iRows = image.rows;
     iCols = image.cols;
+    image.convertTo(imgcpy, CV_64F);
 
-    Mat cmap;
+    Mat cmap, cmapcpy;
     retrieveImage(cmap, 2);
+    cRows = cmap.rows;
+    cCols = cmap.cols;
+    cmap.convertTo(cmapcpy, CV_64F);
 
+    for (int i=0; i<cRows; i++) {
+        for (int j=0; j<cCols; j++) {
+            if (cmapcpy.at<double>(i,j)<0 || cmapcpy.at<double>(i,j)>1) {
+                sciprint("Invalid colormap");
+                return 0;
+            }
+        }
+    }
 
-    unsigned char *r;
-    r=(unsigned char *)malloc(sizeof(unsigned char)*iRows*iCols);
-    int m = 0;
+    Mat gray = Mat::zeros(image.size(), CV_64F);
 
 
     for (int i=0; i<iRows; i++) {
         for (int j=0; j<iCols; j++) {
-            int temp = image.at<uchar>(i, j);
-            r[i + iRows*j] = (unsigned char)((0.2989 * cmap.at<double>(temp, 0) + 0.5870 * cmap.at<double>(temp, 1) + 0.1140 * cmap.at<double>(temp, 2))*255 + 0.5) ;
+            unsigned int temp = (unsigned int)imgcpy.at<double>(i, j);
+            if (temp >= cRows) {
+                temp = cRows - 1;
+            }
+            if (!integer) {
+                if (temp!=0) {temp-=1;}
+            }
+            gray.at<double>(i,j) = (0.2989 * cmapcpy.at<double>(temp, 0) + 0.5870 * cmapcpy.at<double>(temp, 1) + 0.1140 * cmapcpy.at<double>(temp, 2)) ;
 
         }
     }
 
-    sciErr = createList(pvApiCtx, nbInputArgument(pvApiCtx) + 1, 1, &piAddrNew);
-    if(sciErr.iErr)
-    {
-        printError(&sciErr, 0);
-        return 0;
-    }
-
-
-    //Adding the R value matrix to the list
-    //Syntax : createMatrixOfInteger32InList(void* _pvCtx, int _iVar, int* _piParent, int _iItemPos, int _iRows, int _iCols, const int* _piData)
-    sciErr = createMatrixOfUnsignedInteger8InList(pvApiCtx, nbInputArgument(pvApiCtx)+1 , piAddrNew, 1,iRows, iCols, r);
-    free(r);
-    if(sciErr.iErr)
-    {
-        printError(&sciErr, 0);
-        return 0;
-    }
+    Mat grayimage;
+    gray.convertTo(grayimage, image.type(), scale, error);
+    returnImage(imtype,grayimage,1);
+    free(imtype);
 
 
     AssignOutputVariable(pvApiCtx, 1) = nbInputArgument(pvApiCtx) + 1;
