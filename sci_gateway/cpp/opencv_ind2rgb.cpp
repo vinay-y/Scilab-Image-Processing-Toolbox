@@ -53,12 +53,12 @@ extern "C"
     int m = 0;
 
 
-    for (int i=1; i<=iRows; i++) {
-        for (int j=1; j<=iCols; j++) {
-            int temp = image.at<uchar>(i-1, j-1);
-            r[m] = cmap.at<double>(temp, 0);
-            g[m] = cmap.at<double>(temp, 1);
-            b[m++] = cmap.at<double>(temp, 2);
+    for (int i=0; i<iRows; i++) {
+        for (int j=0; j<iCols; j++) {
+            int temp = image.at<uchar>(i, j);
+            r[i + iRows*j] = cmap.at<double>(temp, 0);
+            g[i + iRows*j] = cmap.at<double>(temp, 1);
+            b[i + iRows*j] = cmap.at<double>(temp, 2);
         }
     }
 

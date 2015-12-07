@@ -51,10 +51,10 @@ extern "C"
     int m = 0;
 
 
-    for (int i=1; i<=iRows; i++) {
-        for (int j=1; j<=iCols; j++) {
-            int temp = image.at<uchar>(i-1, j-1);
-            r[m++] = (unsigned char)((0.2989 * cmap.at<double>(temp, 0) + 0.5870 * cmap.at<double>(temp, 1) + 0.1140 * cmap.at<double>(temp, 2))*255 + 0.5) ;
+    for (int i=0; i<iRows; i++) {
+        for (int j=0; j<iCols; j++) {
+            int temp = image.at<uchar>(i, j);
+            r[i + iRows*j] = (unsigned char)((0.2989 * cmap.at<double>(temp, 0) + 0.5870 * cmap.at<double>(temp, 1) + 0.1140 * cmap.at<double>(temp, 2))*255 + 0.5) ;
 
         }
     }
