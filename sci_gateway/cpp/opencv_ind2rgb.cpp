@@ -1,5 +1,7 @@
 /********************************************************
 Author: Vinay
+
+Function: ind2rgb(image, colormap)
 ********************************************************/
 
 #include <numeric>
@@ -24,7 +26,7 @@ extern "C"
     SciErr sciErr;
     int intErr = 0;
     int iRows=0,iCols=0;
-    int pirows=0,picols=0;
+    int cRows=0,cCols=0;
     int *piAddr = NULL;
     int *piAddrNew = NULL;
     int *piAddr2  = NULL;
@@ -37,14 +39,43 @@ extern "C"
     CheckInputArgument(pvApiCtx, 2, 2);
     CheckOutputArgument(pvApiCtx, 1, 1) ;
 
-    Mat image;
+    Mat image, imgcpy;
     retrieveImage(image, 1);
+    string tempstring = type2str(image.type());
+    char *imtype;
+    imtype = (char *)malloc(tempstring.size() + 1);
+    memcpy(imtype, tempstring.c_str(), tempstring.size() + 1);
+    bool integer;
+
+    if (strcmp(imtype,"8U")==0 || strcmp(imtype,"16U")==0) {
+        integer = true;
+    }
+    else if (strcmp(imtype,"32F")==0 || strcmp(imtype,"64F")==0) {
+        integer = false;
+    }
+    else {
+        sciprint("Invalid image");
+        return 0;
+    }
     iRows = image.rows;
     iCols = image.cols;
+    image.convertTo(imgcpy, CV_64F);
 
-    Mat cmap;
+    Mat cmap, cmapcpy;
     retrieveImage(cmap, 2);
+    cRows = cmap.rows;
+    cCols = cmap.cols;
+    cmap.convertTo(cmapcpy, CV_64F);
 
+    for (int i=0; i<cRows; i++) {
+        for (int j=0; j<cCols; j++) {
+            if (cmapcpy.at<double>(i,j)<0 || cmapcpy.at<double>(i,j)>1) {
+                sciprint("Invalid colormap");
+                return 0;
+            }
+        }
+    }
+    
 
     double *r,*g,*b;
     r=(double *)malloc(sizeof(double)*iRows*iCols);
@@ -55,10 +86,16 @@ extern "C"
 
     for (int i=0; i<iRows; i++) {
         for (int j=0; j<iCols; j++) {
-            int temp = image.at<uchar>(i, j);
-            r[i + iRows*j] = cmap.at<double>(temp, 0);
-            g[i + iRows*j] = cmap.at<double>(temp, 1);
-            b[i + iRows*j] = cmap.at<double>(temp, 2);
+            unsigned int temp = (unsigned int)imgcpy.at<double>(i, j);
+            if (temp >= cRows) {
+                temp = cRows - 1;
+            }
+            if (!integer) {
+                if (temp!=0) {temp-=1;}
+            }
+            r[i + iRows*j] = cmapcpy.at<double>(temp, 0);
+            g[i + iRows*j] = cmapcpy.at<double>(temp, 1);
+            b[i + iRows*j] = cmapcpy.at<double>(temp, 2);
         }
     }
 
