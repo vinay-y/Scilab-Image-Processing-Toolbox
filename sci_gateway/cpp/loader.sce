@@ -61,6 +61,7 @@ list_functions = [ 'imread';
                    'houghlinesp';
                    'ind2rgb';
                    'ind2gray';
+                   'fsamp2';
 ];
 addinter(libskeleton_imagepr_path + filesep() + 'libskeleton_imageprocessing' + getdynlibext(), 'libskeleton_imageprocessing', list_functions);
 // remove temp. variables on stack

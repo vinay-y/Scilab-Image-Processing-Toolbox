@@ -52,6 +52,7 @@ names = [
             "houghlinesp","opencv_houghlinesp";
             "ind2rgb","opencv_ind2rgb";
             "ind2gray","opencv_ind2gray";
+            "fsamp2","opencv_fsamp2";
 		];
 
 files = [
@@ -105,7 +106,8 @@ files = [
             "opencv_getrotationmatrix2D.cpp",
             "opencv_houghlinesp.cpp",
             "opencv_ind2rgb.cpp",
-            "opencv_ind2gray.cpp"
+            "opencv_ind2gray.cpp",
+            "opencv_fsamp2.cpp"
 		];
 
 function builder_gw_cpp()
