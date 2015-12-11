@@ -53,6 +53,7 @@ names = [
             "ind2rgb","opencv_ind2rgb";
             "ind2gray","opencv_ind2gray";
             "fsamp2","opencv_fsamp2";
+            "ftrans2","opencv_ftrans2";
 		];
 
 files = [
@@ -107,7 +108,8 @@ files = [
             "opencv_houghlinesp.cpp",
             "opencv_ind2rgb.cpp",
             "opencv_ind2gray.cpp",
-            "opencv_fsamp2.cpp"
+            "opencv_fsamp2.cpp",
+            "opencv_ftrans2.cpp"
 		];
 
 function builder_gw_cpp()
