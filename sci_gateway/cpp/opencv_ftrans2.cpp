@@ -17,7 +17,7 @@ void rotate180(Mat &m) {
     double temp;
     for (int i=0; i<(m.rows+1)/2; i++) {
         int k = m.cols;
-        if ((i+1)>=((m.rows+1)/2)) {
+        if ((i+1)>=((m.rows+1)/2) && m.rows%2!=0) {
             k = (m.cols+1)/2;
         }
         for (int j=0; j<k; j++) {
@@ -93,7 +93,7 @@ extern "C"
     int zeroCount = 0;
     double eps = 1.5e-5;
 
-    for (int i=0; i<=b.cols; i++) {
+    for (int i=0; i<b.cols; i++) {
         if (abs(b.at<double>(0, i) - c.at<double>(0, i)) > eps) {
             zeroCount = b.cols;
             break;
@@ -125,6 +125,14 @@ extern "C"
 
     rotate180(b);
 
+    for (int k=0; k<b.rows; k++) {
+        for(int j=0; j<b.cols; j++) {
+            cout <<b.at<double>(k, j)<< " ";
+        }
+        cout<<endl;
+    }
+    cout<<endl;
+
     int inset1 = (t.rows-1)/2;
     int inset2 = (t.cols-1)/2;
     int n = (b.cols-1)/2;
@@ -141,29 +149,38 @@ extern "C"
 
     h.at<double>(inset1,inset2) = h.at<double>(inset1,inset2) + a.at<double>(0, 0);
 
-    for (int i=0; i<a.rows; i++) {
-        for(int j=0; j<a.cols; j++) {
-            cout <<a.at<double>(i, j)<< " ";
+    for (int k=0; k<h.rows; k++) {
+        for(int j=0; j<h.cols; j++) {
+            cout <<h.at<double>(k, j)<< " ";
         }
         cout<<endl;
     }
+    cout<<endl;
 
     for (int i=2; i<=n; i++) {
         Mat src;
+        t.copyTo(src);
+
         int additionalRows = P1.rows-1, additionalCols = P1.cols-1;
-        copyMakeBorder(t, src, (additionalRows+1)/2, additionalRows/2, (additionalCols+1)/2, additionalCols/2, BORDER_CONSTANT, Scalar(0));
+        cout<<additionalRows<<additionalCols<<endl;
+        copyMakeBorder(src, src, (additionalRows+1)/2, additionalRows/2, (additionalCols+1)/2, additionalCols/2, BORDER_CONSTANT, Scalar(0));
+        
         Point anchor(P1.cols - P1.cols/2 - 1, P1.rows - P1.rows/2 - 1);
         int borderMode = BORDER_CONSTANT;
-        filter2D(src, P2, t.depth(), P1, anchor, 0, borderMode);
+        Mat P11;
+        flip(P1, P11,-1);
+        filter2D(src, P2, t.depth(), P11, anchor, 0, borderMode);
 
         P2 = P2 * 2;
 
-        for (int i=0; i<P1.rows; i++) {
-        for(int j=0; j<P1.cols; j++) {
-            cout <<P1.at<double>(i, j)<< " ";
+        for (int k=0; k<P2.rows; k++) {
+        for(int j=0; j<P2.cols; j++) {
+            cout <<P2.at<double>(k, j)<< " ";
         }
         cout<<endl;
     }
+    cout<<endl;
+
        for (int x=0; x<P0.rows; x++) {
             for (int y=0; y<P0.cols; y++) {
                 P2.at<double>(x + 2*inset1, y+ 2*inset2) = P2.at<double>(x + 2*inset1, y+ 2*inset2) - P0.at<double>(x, y);
@@ -181,7 +198,23 @@ extern "C"
         P2.copyTo(P1);
     }
 
+    for (int k=0; k<h.rows; k++) {
+        for(int j=0; j<h.cols; j++) {
+            cout <<h.at<double>(k, j)<< " ";
+        }
+        cout<<endl;
+    }
+    cout<<endl;
+
     rotate180(h);
+
+    for (int k=0; k<h.rows; k++) {
+        for(int j=0; j<h.cols; j++) {
+            cout <<h.at<double>(k, j)<< " ";
+        }
+        cout<<endl;
+    }
+    cout<<endl;
 
     Mat hcopy;
     h.copyTo(hcopy);
