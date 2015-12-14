@@ -1,7 +1,7 @@
 /********************************************************
 Author: Vinay
 
-Function: ind2gray(image, colormap)
+Function: h = ftrans2(b, t)
 ********************************************************/
 
 #include <numeric>
@@ -86,8 +86,7 @@ extern "C"
         return 0;
     }
 
-    Mat c;
-    b.copyTo(c);
+    Mat c = b.clone();
     rotate180(c);
 
     int zeroCount = 0;
@@ -115,8 +114,10 @@ extern "C"
 
     }
     else {
+        Mat tcpy;
         double data[3][3] = {{1.0/8, 2.0/8, 1.0/8},{2.0/8, -4.0/8, 2.0/8},{1.0/8, 2.0/8, 1.0/8}};
-        t = Mat(3, 3, CV_64F, &data);
+        tcpy = Mat(3, 3, CV_64F, &data);
+        t = tcpy.clone();
     }
         
     rotate180(b);
@@ -124,14 +125,6 @@ extern "C"
     fftshift(b).copyTo(b);
 
     rotate180(b);
-
-    for (int k=0; k<b.rows; k++) {
-        for(int j=0; j<b.cols; j++) {
-            cout <<b.at<double>(k, j)<< " ";
-        }
-        cout<<endl;
-    }
-    cout<<endl;
 
     int inset1 = (t.rows-1)/2;
     int inset2 = (t.cols-1)/2;
@@ -149,46 +142,29 @@ extern "C"
 
     h.at<double>(inset1,inset2) = h.at<double>(inset1,inset2) + a.at<double>(0, 0);
 
-    for (int k=0; k<h.rows; k++) {
-        for(int j=0; j<h.cols; j++) {
-            cout <<h.at<double>(k, j)<< " ";
-        }
-        cout<<endl;
-    }
-    cout<<endl;
-
     for (int i=2; i<=n; i++) {
-        Mat src;
-        t.copyTo(src);
+        Mat src = t.clone();
 
         int additionalRows = P1.rows-1, additionalCols = P1.cols-1;
-        cout<<additionalRows<<additionalCols<<endl;
+
         copyMakeBorder(src, src, (additionalRows+1)/2, additionalRows/2, (additionalCols+1)/2, additionalCols/2, BORDER_CONSTANT, Scalar(0));
         
         Point anchor(P1.cols - P1.cols/2 - 1, P1.rows - P1.rows/2 - 1);
         int borderMode = BORDER_CONSTANT;
         Mat P11;
         flip(P1, P11,-1);
-        filter2D(src, P2, t.depth(), P11, anchor, 0, borderMode);
+        filter2D(src, P2, src.depth(), P11, anchor, 0, borderMode);
 
         P2 = P2 * 2;
 
-        for (int k=0; k<P2.rows; k++) {
-        for(int j=0; j<P2.cols; j++) {
-            cout <<P2.at<double>(k, j)<< " ";
-        }
-        cout<<endl;
-    }
-    cout<<endl;
-
-       for (int x=0; x<P0.rows; x++) {
+        for (int x=0; x<P0.rows; x++) {
             for (int y=0; y<P0.cols; y++) {
                 P2.at<double>(x + 2*inset1, y+ 2*inset2) = P2.at<double>(x + 2*inset1, y+ 2*inset2) - P0.at<double>(x, y);
             }
         }
         h.copyTo(hh);
         h = (P2*a.at<double>(0, i));
-       for (int x=0; x<P1.rows; x++) {
+        for (int x=0; x<P1.rows; x++) {
             for (int y=0; y<P1.cols; y++) {
                 h.at<double>(x + inset1, y + inset2) = h.at<double>(x + inset1, y + inset2) + hh.at<double>(x, y);
             }
@@ -196,25 +172,10 @@ extern "C"
 
         P1.copyTo(P0);
         P2.copyTo(P1);
-    }
 
-    for (int k=0; k<h.rows; k++) {
-        for(int j=0; j<h.cols; j++) {
-            cout <<h.at<double>(k, j)<< " ";
-        }
-        cout<<endl;
     }
-    cout<<endl;
 
     rotate180(h);
-
-    for (int k=0; k<h.rows; k++) {
-        for(int j=0; j<h.cols; j++) {
-            cout <<h.at<double>(k, j)<< " ";
-        }
-        cout<<endl;
-    }
-    cout<<endl;
 
     Mat hcopy;
     h.copyTo(hcopy);
