@@ -11,28 +11,24 @@ Function: ind2gray(image, colormap)
 #include <iostream>
 using namespace cv;
 using namespace std;
-extern "C"
-{
-  #include "api_scilab.h"
-  #include "Scierror.h"
-  #include "BOOL.h"
-  #include <localization.h>
-  #include "sciprint.h"
-  #include "../common.h"
 
-
-  void rot180(Mat m) {
+void rotate180(Mat &m) {
     double temp;
     for (int i=0; i<(m.rows+1)/2; i++) {
-        for (int j=0; j<m.cols; j++) {
+        int k = m.cols;
+        if ((i+1)>=((m.rows+1)/2) && m.rows%2!=0) {
+            k = (m.cols+1)/2;
+        }
+        for (int j=0; j<k; j++) {
             temp = m.at<double>(i, j);
             m.at<double>(i, j) = m.at<double>(m.rows-i-1, m.cols-j-1);
             m.at<double>(m.rows-i-1, m.cols-j-1) = temp;
         }
     }
-  }  
 
-  Mat fftshift(Mat m) {
+}  
+
+Mat fftshift(Mat m) {
     int a = m.rows/2;
     int b = m.cols/2;
     Mat r = Mat::zeros(m.size(), m.type());
@@ -42,7 +38,17 @@ extern "C"
         }
     }
     return r;
-  }
+}
+
+extern "C"
+{
+  #include "api_scilab.h"
+  #include "Scierror.h"
+  #include "BOOL.h"
+  #include <localization.h>
+  #include "sciprint.h"
+  #include "../common.h"
+
 
   int opencv_fsamp2(char *fname, unsigned long fname_len)
   {
@@ -72,39 +78,13 @@ extern "C"
         Mat hd, hdcpy;
         retrieveImage(hdcpy, 1);
         hdcpy.convertTo(hd, CV_64F);
-        rot180(hd);
+        rotate180(hd);
 
-        // for(int i=0;i<hd.rows;i++)
-        // {
-        //     for(int j=0;j<hd.cols;j++)
-        //     {
-        //         cout<<hd.at<double>(i, j)<<" ";
-        //     }
-        //     cout<<endl;
-        // }
-        // cout<<endl;
         fftshift(hd).copyTo(hd);
 
-        // for(int i=0;i<hd.rows;i++)
-        // {
-        //     for(int j=0;j<hd.cols;j++)
-        //     {
-        //         cout<<hd.at<double>(i, j)<<" ";
-        //     }
-        //     cout<<endl;
-        // }
-        // cout<<endl;
-        rot180(hd);
+        rotate180(hd);
 
-        // for(int i=0;i<hd.rows;i++)
-        // {
-        //     for(int j=0;j<hd.cols;j++)
-        //     {
-        //         cout<<hd.at<double>(i, j)<<" ";
-        //     }
-        //     cout<<endl;
-        // }
-        // cout<<endl;
+
         Mat padded;                            //expand input image to optimal size
         int m = getOptimalDFTSize( hd.rows );
         int n = getOptimalDFTSize( hd.cols ); // on the border add zero values
@@ -120,8 +100,8 @@ extern "C"
 
         fftshift(planes[0]).copyTo(planes[0]);
         fftshift(planes[1]).copyTo(planes[1]);
-        rot180(planes[0]);
-        rot180(planes[1]);
+        rotate180(planes[0]);
+        rotate180(planes[1]);
 
         double *re = (double *)malloc(planes[0].rows * planes[0].cols * sizeof(double));
         double *im = (double *)malloc(planes[0].rows * planes[0].cols * sizeof(double));
@@ -159,68 +139,11 @@ extern "C"
         }
 
     }
+    else if (nbInputArgument(pvApiCtx)==2 || nbInputArgument(pvApiCtx)==3) {
+        sciprint("1 or 4 arguments expected.");
+        return 0;
+    }
 
-
-
-    // if (strcmp(imtype,"8U")==0) {
-    //     integer = true;
-    //     scale = 255;
-    //     error = 0.5;
-    // }
-    // else if (strcmp(imtype,"16U")==0) {
-    //     integer = true;
-    //     scale = 65535;
-    //     error = 0.5;
-    // }
-    // else if (strcmp(imtype,"32F")==0 || strcmp(imtype,"64F")==0) {
-    //     integer = false;
-    //     scale = 1;
-    //     error = 0;
-    // }
-    // else {
-    //     sciprint("Invalid image");
-    //     return 0;
-    // }
-    // iRows = image.rows;
-    // iCols = image.cols;
-    // image.convertTo(imgcpy, CV_64F);
-
-    // Mat cmap, cmapcpy;
-    // retrieveImage(cmap, 2);
-    // cRows = cmap.rows;
-    // cCols = cmap.cols;
-    // cmap.convertTo(cmapcpy, CV_64F);
-
-    // for (int i=0; i<cRows; i++) {
-    //     for (int j=0; j<cCols; j++) {
-    //         if (cmapcpy.at<double>(i,j)<0 || cmapcpy.at<double>(i,j)>1) {
-    //             sciprint("Invalid colormap");
-    //             return 0;
-    //         }
-    //     }
-    // }
-
-    // Mat gray = Mat::zeros(image.size(), CV_64F);
-
-
-    // for (int i=0; i<iRows; i++) {
-    //     for (int j=0; j<iCols; j++) {
-    //         unsigned int temp = (unsigned int)imgcpy.at<double>(i, j);
-    //         if (temp >= cRows) {
-    //             temp = cRows - 1;
-    //         }
-    //         if (!integer) {
-    //             if (temp!=0) {temp-=1;}
-    //         }
-    //         gray.at<double>(i,j) = (0.2989 * cmapcpy.at<double>(temp, 0) + 0.5870 * cmapcpy.at<double>(temp, 1) + 0.1140 * cmapcpy.at<double>(temp, 2)) ;
-
-    //     }
-    // }
-
-    // Mat grayimage;
-    // gray.convertTo(grayimage, image.type(), scale, error);
-    // returnImage(imtype,grayimage,1);
-    // free(imtype);
 
 
     AssignOutputVariable(pvApiCtx, 1) = nbInputArgument(pvApiCtx) + 1;
