@@ -9,10 +9,13 @@ Function: ind2gray(image, colormap)
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/opencv.hpp"
 #include <iostream>
+#include <cmath>
 using namespace cv;
 using namespace std;
 
-void rotate180(Mat &m) {
+#define pi 3.14159
+
+void rot180(Mat &m) {
     double temp;
     for (int i=0; i<(m.rows+1)/2; i++) {
         int k = m.cols;
@@ -28,7 +31,7 @@ void rotate180(Mat &m) {
 
 }  
 
-Mat fftshift(Mat m) {
+Mat ffshift(Mat m) {
     int a = m.rows/2;
     int b = m.cols/2;
     Mat r = Mat::zeros(m.size(), m.type());
@@ -38,6 +41,22 @@ Mat fftshift(Mat m) {
         }
     }
     return r;
+}
+
+void meshgrid(Mat &a, Mat &b) {
+    transpose(b, b);
+    Mat c = Mat::ones(1, a.cols, CV_64F);
+    Mat d = Mat::ones(b.rows, 1, CV_64F);
+    a = d * a;
+    b = b * c;
+}
+
+void makecol(Mat &src, Mat &des) {
+    for (int j=0; j<src.cols; j++) {
+        for (int i=0; i<src.rows; i++) {
+            des.at<double>(j*src.rows + i) = src.at<double>(i, j);
+        }
+    }
 }
 
 extern "C"
@@ -56,9 +75,11 @@ extern "C"
     SciErr sciErr;
     int intErr = 0;
     int iRows=0,iCols=0;
-    int cRows=0,cCols=0;
+    int rows=0,cols=0;
     int *piAddr = NULL;
+    int *piAddr2 = NULL;
     int *piAddrNew = NULL;
+    double *re, *im;
 
     //checking input argument
     CheckInputArgument(pvApiCtx, 1, 4);
@@ -78,11 +99,11 @@ extern "C"
         Mat hd, hdcpy;
         retrieveImage(hdcpy, 1);
         hdcpy.convertTo(hd, CV_64F);
-        rotate180(hd);
+        rot180(hd);
 
-        fftshift(hd).copyTo(hd);
+        ffshift(hd).copyTo(hd);
 
-        rotate180(hd);
+        rot180(hd);
 
 
         Mat padded;                            //expand input image to optimal size
@@ -98,13 +119,13 @@ extern "C"
 
         split(complexI, planes);   
 
-        fftshift(planes[0]).copyTo(planes[0]);
-        fftshift(planes[1]).copyTo(planes[1]);
-        rotate180(planes[0]);
-        rotate180(planes[1]);
+        ffshift(planes[0]).copyTo(planes[0]);
+        ffshift(planes[1]).copyTo(planes[1]);
+        rot180(planes[0]);
+        rot180(planes[1]);
 
-        double *re = (double *)malloc(planes[0].rows * planes[0].cols * sizeof(double));
-        double *im = (double *)malloc(planes[0].rows * planes[0].cols * sizeof(double));
+        re = (double *)malloc(planes[0].rows * planes[0].cols * sizeof(double));
+        im = (double *)malloc(planes[0].rows * planes[0].cols * sizeof(double));
 
         for(int i=0;i<planes[0].rows;i++)
         {
@@ -116,8 +137,125 @@ extern "C"
             }
             //cout<<endl;
         }
+        rows = planes[0].rows;
+        cols = planes[0].cols;
 
 
+    }
+    else if (nbInputArgument(pvApiCtx)==2 || nbInputArgument(pvApiCtx)==3) {
+        sciprint("1 or 4 arguments expected.");
+        return 0;
+    }
+    else {
+        Mat f1, f1cpy;
+        retrieveImage(f1cpy, 1);
+        f1cpy.convertTo(f1, CV_64F);
+
+        Mat f2, f2cpy;
+        retrieveImage(f2cpy, 2);
+        f2cpy.convertTo(f2, CV_64F);
+
+        Mat hd, hdcpy;
+        retrieveImage(hdcpy, 3);
+        hdcpy.convertTo(hd, CV_64F);
+
+        meshgrid(f1, f2);
+
+        f1 = f1*pi;
+        f2 = f2*pi;
+
+        double * siz;
+
+        sciErr = getVarAddressFromPosition(pvApiCtx,4,&piAddr2);
+        if (sciErr.iErr)
+        {
+            printError(&sciErr, 0);
+            return 0;
+        }
+        sciErr = getMatrixOfDouble(pvApiCtx, piAddr2, &rows, &cols, &siz);
+        if (sciErr.iErr)
+        {
+            printError(&sciErr, 0);
+            return 0;
+        }
+
+        rows = siz[0];
+        cols = siz[1];
+
+
+        Mat n1 = Mat::zeros(cols, 1, CV_64F);
+        Mat n2 = Mat::zeros(rows, 1, CV_64F);
+        int s1, s2;
+        s1 = cols/2;
+        s2 = rows/2;
+
+        for (int i = 0; i<cols; i++) {
+            n1.at<double>(i, 0) = i - s1;
+        }
+        for (int i = 0; i<rows; i++) {
+            n2.at<double>(i, 0) = i - s2;
+        }
+
+        meshgrid(n1, n2);
+
+        Mat hre_col = Mat::zeros(rows*cols, 1, CV_64F);
+        Mat him_col = Mat::zeros(rows*cols, 1, CV_64F);
+        Mat hd_col = Mat::zeros(hd.rows * hd.cols, 1, CV_64F);
+        Mat f1_col = Mat::zeros(f1.rows * f1.cols, 1, CV_64F);
+        Mat f2_col = Mat::zeros(f2.rows * f2.cols, 1, CV_64F);
+        Mat n1_col = Mat::zeros(n1.rows * n1.cols, 1, CV_64F);
+        Mat n2_col = Mat::zeros(n2.rows * n2.cols, 1, CV_64F);
+        makecol(hd, hd_col);
+        makecol(f1, f1_col);
+        makecol(f2, f2_col);
+        makecol(n1, n1_col);
+        makecol(n2, n2_col);
+        transpose(n1_col, n1_col);
+        transpose(n2_col, n2_col);
+        f1_col = f1_col * n1_col;
+        f2_col = f2_col * n2_col;
+        f1_col = f1_col + f2_col;
+
+        Mat DFT[2];
+        DFT[0] = Mat::zeros(f1_col.rows, f1_col.cols, CV_64F);
+        DFT[1] = Mat::zeros(f1_col.rows, f1_col.cols, CV_64F);
+
+        for (int i=0; i<f1_col.rows; i++) {
+            for (int j=0; j<f1_col.cols; j++) {
+                DFT[0].at<double>(i, j) = cos(f1_col.at<double>(i, j));
+                DFT[1].at<double>(i, j) = -1 * sin(f1_col.at<double>(i, j));
+            }
+        }
+        
+        hre_col = DFT[0].inv() * hd_col;
+        him_col = DFT[0].inv() * hd_col;
+
+        Mat h[2];
+        h[0] = Mat::zeros(rows, cols, CV_64F);
+        h[1] = Mat::zeros(rows, cols, CV_64F);
+
+        for (int j=0; j<cols; j++) {
+            for (int i=0; i<rows; i++) {
+                h[0].at<double>(i, j) = hre_col.at<double>(j*rows + i);
+                h[1].at<double>(i, j) = him_col.at<double>(j*rows + i); 
+            }
+        }
+
+        re = (double *)malloc(h[0].rows * h[0].cols * sizeof(double));
+        im = (double *)malloc(h[0].rows * h[0].cols * sizeof(double));
+
+        for(int i=0;i<h[0].rows;i++)
+        {
+            for(int j=0;j<h[0].cols;j++)
+            {
+                re[i+h[0].rows*j]=h[0].at<double>(i, j);
+                //cout<<h[0].at<double>(i, j)<<" ";
+                im[i+h[0].rows*j]=h[1].at<double>(i, j);
+            }
+            //cout<<endl;
+        }
+
+    }
 
         sciErr = createList(pvApiCtx, nbInputArgument(pvApiCtx) + 1, 1, &piAddrNew);
         if(sciErr.iErr)
@@ -129,7 +267,7 @@ extern "C"
 
         //Adding the R value matrix to the list
         //Syntax : createMatrixOfInteger32InList(void* _pvCtx, int _iVar, int* _piParent, int _iItemPos, int _iRows, int _iCols, const int* _piData)
-        sciErr = createComplexMatrixOfDoubleInList(pvApiCtx, nbInputArgument(pvApiCtx)+1 , piAddrNew, 1, planes[0].rows,planes[0].cols, re, im);
+        sciErr = createComplexMatrixOfDoubleInList(pvApiCtx, nbInputArgument(pvApiCtx)+1 , piAddrNew, 1, rows, cols, re, im);
         free(re);
         free(im);
         if(sciErr.iErr)
@@ -137,12 +275,6 @@ extern "C"
             printError(&sciErr, 0);
             return 0;
         }
-
-    }
-    else if (nbInputArgument(pvApiCtx)==2 || nbInputArgument(pvApiCtx)==3) {
-        sciprint("1 or 4 arguments expected.");
-        return 0;
-    }
 
 
 
