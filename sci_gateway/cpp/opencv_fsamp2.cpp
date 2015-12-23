@@ -13,7 +13,7 @@ Function: ind2gray(image, colormap)
 using namespace cv;
 using namespace std;
 
-#define pi 3.14159
+#define pi 3.14159265358979323846
 
 void rot180(Mat &m) {
     double temp;
@@ -44,10 +44,17 @@ Mat ffshift(Mat m) {
 }
 
 void meshgrid(Mat &a, Mat &b) {
-    transpose(b, b);
+    if (a.rows!=1) {
+        transpose(a, a);
+    }
+    if (b.cols!=1) {
+        transpose(b, b);
+    }
     Mat c = Mat::ones(1, a.cols, CV_64F);
     Mat d = Mat::ones(b.rows, 1, CV_64F);
+    cout<<"pain1"<<endl;
     a = d * a;
+    cout<<"pain2"<<endl;
     b = b * c;
 }
 
@@ -161,8 +168,10 @@ extern "C"
 
         meshgrid(f1, f2);
 
-        f1 = f1*pi;
-        f2 = f2*pi;
+        cout<<"HEllO"<<endl;
+
+        (f1*=pi);
+        (f2*=pi);
 
         double * siz;
 
@@ -182,6 +191,7 @@ extern "C"
         rows = siz[0];
         cols = siz[1];
 
+        cout<<"HEll1"<<endl;
 
         Mat n1 = Mat::zeros(cols, 1, CV_64F);
         Mat n2 = Mat::zeros(rows, 1, CV_64F);
@@ -198,6 +208,8 @@ extern "C"
 
         meshgrid(n1, n2);
 
+        cout<<"HEll2"<<endl;
+
         Mat hre_col = Mat::zeros(rows*cols, 1, CV_64F);
         Mat him_col = Mat::zeros(rows*cols, 1, CV_64F);
         Mat hd_col = Mat::zeros(hd.rows * hd.cols, 1, CV_64F);
@@ -210,15 +222,50 @@ extern "C"
         makecol(f2, f2_col);
         makecol(n1, n1_col);
         makecol(n2, n2_col);
+
+        // for (int i=0; i<f1_col.rows; i++) {
+        //     for (int j=0; j<f1_col.cols; j++) {
+        //         cout<<f1_col.at<double>(i, j)<<" ";
+        //     }
+        //     cout<<endl;
+        // }
+
+        // for (int i=0; i<f2_col.rows; i++) {
+        //     for (int j=0; j<f2_col.cols; j++) {
+        //         cout<<f2_col.at<double>(i, j)<<" ";
+        //     }
+        //     cout<<endl;
+        // }
+
+        // for (int i=0; i<n1_col.rows; i++) {
+        //     for (int j=0; j<n1_col.cols; j++) {
+        //         cout<<n1_col.at<double>(i, j)<<" ";
+        //     }
+        //     cout<<endl;
+        // }
+
+        // for (int i=0; i<n2_col.rows; i++) {
+        //     for (int j=0; j<n2_col.cols; j++) {
+        //         cout<<n2_col.at<double>(i, j)<<" ";
+        //     }
+        //     cout<<endl;
+        // }
+
+
         transpose(n1_col, n1_col);
         transpose(n2_col, n2_col);
-        f1_col = f1_col * n1_col;
+        f1_col = (f1_col * n1_col);
         f2_col = f2_col * n2_col;
         f1_col = f1_col + f2_col;
 
-        Mat DFT[2];
+        cout<<"HEll3"<<endl;
+
+        Mat DFT[5];
         DFT[0] = Mat::zeros(f1_col.rows, f1_col.cols, CV_64F);
         DFT[1] = Mat::zeros(f1_col.rows, f1_col.cols, CV_64F);
+        DFT[2] = Mat::zeros(f1_col.rows, f1_col.cols, CV_64F);
+        DFT[3] = Mat::zeros(f1_col.rows, f1_col.cols, CV_64F);
+        DFT[4] = Mat::zeros(2 * f1_col.rows, 2 * f1_col.cols, CV_64F);
 
         for (int i=0; i<f1_col.rows; i++) {
             for (int j=0; j<f1_col.cols; j++) {
@@ -226,9 +273,56 @@ extern "C"
                 DFT[1].at<double>(i, j) = -1 * sin(f1_col.at<double>(i, j));
             }
         }
-        
-        hre_col = DFT[0].inv() * hd_col;
-        him_col = DFT[0].inv() * hd_col;
+
+        cout<<"HEll4"<<endl;
+
+        for(int i=0;i<DFT[0].rows;i++) {
+            for(int j=0;j<DFT[0].cols;j++) {
+                DFT[4].at<double>(i,j)  =  DFT[0].at<double>(i,j);  
+                DFT[4].at<double>(i,j+DFT[0].cols) = DFT[1].at<double>(i,j);
+                DFT[4].at<double>(i+DFT[0].rows,j) = - DFT[1].at<double>(i,j);
+                DFT[4].at<double>(i+DFT[0].rows,j+DFT[0].cols) = DFT[0].at<double>(i,j);  
+            }
+        }
+
+        for (int i=0; i<DFT[4].rows; i++) {
+            for (int j=0; j<DFT[4].cols; j++) {
+                cout<<DFT[4].at<double>(i, j)<<" ";
+            }
+            cout<<endl;
+        }
+
+        DFT[4] = DFT[4].inv(DECOMP_LU);
+        for(int i=0;i<DFT[0].rows;i++) {
+            for(int j=0;j<DFT[0].cols;j++) {
+                DFT[2].at<double>(i,j) = DFT[4].at<double>(i,j);
+                DFT[3].at<double>(i,j) = DFT[4].at<double>(i,j+DFT[0].cols);
+            }
+        }
+
+        for (int i=0; i<hd_col.rows; i++) {
+            for (int j=0; j<hd_col.cols; j++) {
+                cout<<hd_col.at<double>(i, j)<<" ";
+            }
+            cout<<endl;
+        }
+
+        for (int i=0; i<DFT[2].rows; i++) {
+            for (int j=0; j<DFT[2].cols; j++) {
+                cout<<DFT[2].at<double>(i, j)<<" ";
+            }
+            cout<<endl;
+        }
+
+        for (int i=0; i<DFT[3].rows; i++) {
+            for (int j=0; j<DFT[3].cols; j++) {
+                cout<<DFT[3].at<double>(i, j)<<" ";
+            }
+            cout<<endl;
+        }
+
+        hre_col = DFT[2] * hd_col;
+        him_col = DFT[3] * hd_col;
 
         Mat h[2];
         h[0] = Mat::zeros(rows, cols, CV_64F);
@@ -241,16 +335,32 @@ extern "C"
             }
         }
 
+        rot180(h[0]);
+        rot180(h[1]);
+
+        cout<<"HEll5"<<endl;
+
         re = (double *)malloc(h[0].rows * h[0].cols * sizeof(double));
         im = (double *)malloc(h[0].rows * h[0].cols * sizeof(double));
 
+        double eps = 1.5e-20;
         for(int i=0;i<h[0].rows;i++)
         {
             for(int j=0;j<h[0].cols;j++)
             {
-                re[i+h[0].rows*j]=h[0].at<double>(i, j);
+                if (abs(h[0].at<double>(i,j)) > eps) {
+                    re[i+h[0].rows*j]=h[0].at<double>(i, j);
+                }
+                else {
+                    re[i+h[0].rows*j]=0;
+                }
                 //cout<<h[0].at<double>(i, j)<<" ";
-                im[i+h[0].rows*j]=h[1].at<double>(i, j);
+                if (abs(h[1].at<double>(i,j)) > eps) {
+                    im[i+h[0].rows*j]=h[1].at<double>(i, j);
+                }
+                else {
+                    im[i+h[0].rows*j]=0;
+                }
             }
             //cout<<endl;
         }
